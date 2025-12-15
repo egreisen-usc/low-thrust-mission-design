@@ -1,0 +1,30 @@
+# Build
+build/
+*.o
+*.so
+*.exe
+CMakeCache.txt
+CMakeFiles/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Results (generated data)
+results/*.csv
+results/*.png
+results/*.pdf
+!results/.gitkeep
+
+# System
+.DS_Store
+*.log
