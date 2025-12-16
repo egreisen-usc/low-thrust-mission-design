@@ -14,6 +14,7 @@ set(PROPAGATOR_SOURCES
     src/propagator.cpp
     src/dynamics.cpp
     src/orbital_elements.cpp
+    src/comparison.cpp
 )
 
 add_executable(propagate_trajectory ${PROPAGATOR_SOURCES})
