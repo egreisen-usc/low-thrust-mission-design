@@ -13,6 +13,7 @@
 #include "orbital_elements.h"
 #include "comparison.h"
 #include "mission_batch.h"
+#include "mission_propagation.h"
 
 // Forward declarations - these are defined in mission_batch.cpp
 bool createDirectory(const std::string& path);
@@ -41,115 +42,52 @@ void runSingleMissionMode(const std::string& config_path) {
     std::cout << "  Integrator: " << config.integrator << "\n";
     std::cout << "  Timestep: " << config.timestep_s << " s\n\n";
     
-    // Initialize orbital state
+    // Get orbital radii
     double r_dep = getOrbitalRadius(config.departure_body);
     double r_arr = getOrbitalRadius(config.arrival_body);
-    double v_circ = std::sqrt(MU_SUN / r_dep);
-    
-    MissionState state(r_dep, 0, 0, 0, v_circ, 0, 
-                       config.spacecraft.initial_mass_kg, 0);
     
     std::cout << "Initial State:\n";
     std::cout << "  Position: " << std::scientific << std::setprecision(3) 
-              << state.radius() << " km\n";
-    std::cout << "  Velocity: " << state.speed() << " km/s\n";
+              << r_dep << " km\n";
+    double v_circ = std::sqrt(MU_SUN / r_dep);
+    std::cout << "  Velocity: " << v_circ << " km/s\n";
     std::cout << "  Mass: " << std::fixed << std::setprecision(1) 
-              << state.m << " kg\n\n";
+              << config.spacecraft.initial_mass_kg << " kg\n\n";
     
-    // Create integrator
-    std::unique_ptr<Propagator> integrator;
-    if (config.integrator == "rk4") {
-        integrator = std::make_unique<RK4Propagator>();
-        std::cout << "Using RK4 integrator\n\n";
-    } else {
-        integrator = std::make_unique<EulerPropagator>();
-        std::cout << "Using Euler integrator\n\n";
-    }
+    std::cout << "Using " << (config.integrator == "rk4" ? "RK4" : "Euler") << " integrator\n\n";
     
-    // Create output file
+    // Create results directory
     std::string results_dir = "../results";
     createDirectory(results_dir);
-    std::ofstream outfile(results_dir + "/" + config.output_filename);
-    outfile << "time(s),r(km),v(km/s),m(kg),ra(km),rp(km),e,a(km)\n";
     
-    // Propagation loop
-    int step = 0;
-    double total_delta_v = 0;
-    int coast_step = -1;
-    
+    // Propagate mission
     std::cout << "Propagating...\n";
+    PropagationResult prop_result = propagateMission(config, r_dep, r_arr, true,
+                                                     results_dir + "/" + config.output_filename);
     
-    while (state.t < config.max_flight_time_s) {
-        // Compute orbital elements
-        OrbitalElements elements = computeOrbitalElements(state.r, state.v, MU_SUN);
-        
-        // Write to file
-        outfile << std::scientific << std::setprecision(6)
-                << state.t << ","
-                << state.r << ","
-                << state.v << ","
-                << std::fixed << std::setprecision(2)
-                << state.m << ","
-                << std::scientific << std::setprecision(3)
-                << elements.r_a << ","
-                << elements.r_p << ","
-                << std::fixed << std::setprecision(6)
-                << elements.e << ","
-                << std::scientific << std::setprecision(3)
-                << elements.a << "\n";
-        
-        // Check coast condition
-        if (elements.r_a >= config.coast_threshold * r_arr && coast_step < 0) {
-            coast_step = step;
-            std::cout << "  Coast activated at step " << step 
-                      << " (t=" << std::fixed << std::setprecision(1) 
-                      << state.t / 86400.0 << " days)\n";
-            std::cout << "    Apoapsis: " << std::scientific << std::setprecision(3) 
-                      << elements.r_a << " km\n";
-            std::cout << "    Target apoapsis: " << config.coast_threshold * r_arr << " km\n";
-            // BREAK immediately upon coast activation
-            break;
-        }
-        
-        // Check fuel
-        if (state.m < 100) {
-            std::cout << "  Fuel depleted at step " << step << "\n";
-            break;
-        }
-
-        
-        // Calculate delta-V for this step
-        if (config.spacecraft.thrust_mN > 1e-10) {
-            double thrust_accel = (config.spacecraft.thrust_mN * 1e-6) / state.m;
-            double delta_v_step = thrust_accel * config.timestep_s;
-            total_delta_v += delta_v_step;
-        }
-        
-        // Integration step
-        integrator->step(state, config.timestep_s,
-                        config.spacecraft.thrust_mN, config.spacecraft.isp_s,
-                        MU_SUN, G0);
-        
-        step++;
+    if (prop_result.coast_step >= 0) {
+        std::cout << "  Coast activated at step " << prop_result.coast_step 
+                  << " (t=" << std::fixed << std::setprecision(1) 
+                  << prop_result.final_state.t / 86400.0 << " days)\n";
     }
     
-    outfile.close();
-    
     std::cout << "\nPropagation Complete!\n\n";
-        std::cout << "Final State:\n";
+    std::cout << "Final State:\n";
     std::cout << "  Time: " << std::fixed << std::setprecision(2) 
-              << state.t / 86400.0 << " days\n";
+              << prop_result.final_state.t / 86400.0 << " days\n";
     std::cout << "  Position: " << std::scientific << std::setprecision(3) 
-              << state.radius() << " km\n";
-    std::cout << "  Velocity: " << std::setprecision(3) << state.speed() << " km/s\n";
+              << prop_result.final_state.radius() << " km\n";
+    std::cout << "  Velocity: " << std::setprecision(3) 
+              << prop_result.final_state.speed() << " km/s\n";
     std::cout << "  Mass: " << std::fixed << std::setprecision(1) 
-              << state.m << " kg\n";
+              << prop_result.final_state.m << " kg\n";
     std::cout << "  Total Delta-V: " << std::scientific << std::setprecision(3) 
-              << total_delta_v << " km/s\n";
+              << prop_result.total_delta_v << " km/s\n";
     std::cout << "  Fuel Consumed: " << std::fixed << std::setprecision(1) 
-              << (config.spacecraft.initial_mass_kg - state.m) << " kg\n\n";
+              << (config.spacecraft.initial_mass_kg - prop_result.final_state.m) << " kg\n\n";
     
-    OrbitalElements final_elements = computeOrbitalElements(state.r, state.v, MU_SUN);
+    OrbitalElements final_elements = computeOrbitalElements(prop_result.final_state.r,
+                                                            prop_result.final_state.v, MU_SUN);
     std::cout << "Final Orbital Elements:\n";
     std::cout << "  Apoapsis: " << std::scientific << std::setprecision(3) 
               << final_elements.r_a << " km\n";
@@ -159,9 +97,10 @@ void runSingleMissionMode(const std::string& config_path) {
     std::cout << "  Semi-major axis: " << std::scientific << std::setprecision(3) 
               << final_elements.a << " km\n\n";
     
-    std::cout << "Results saved to: results/" << config.output_filename << "\n";
+    std::cout << "Results saved to: " << results_dir << "/" << config.output_filename << "\n";
     std::cout << "=====================================================\n\n";
 }
+
 
 // ===========================================================================
 // BATCH MISSION RUNNER

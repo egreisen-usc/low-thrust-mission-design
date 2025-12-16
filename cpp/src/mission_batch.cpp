@@ -11,6 +11,7 @@
 #include "dynamics.h"
 #include "orbital_elements.h"
 #include "mission_batch.h"
+#include "mission_propagation.h"
 
 // ===========================================================================
 // DIRECTORY CREATION HELPER
@@ -130,66 +131,38 @@ MissionResult MissionBatchRunner::propagateMission(const std::string& config_pat
     result.arrival_body = getBodyName(config.arrival_body);
     result.initial_mass_kg = config.spacecraft.initial_mass_kg;
     
-    // Initialize state
+    // Get orbital radii
     double r_dep = getOrbitalRadius(config.departure_body);
     double r_arr = getOrbitalRadius(config.arrival_body);
-    double v_circ = std::sqrt(MU_SUN / r_dep);
     
-    MissionState state(r_dep, 0, 0, 0, v_circ, 0, 
-                       config.spacecraft.initial_mass_kg, 0);
+    // Create results directory
+    std::string results_dir = "../results";
+    createDirectory(results_dir);
     
-    // Create integrator
-    std::unique_ptr<Propagator> integrator;
-    if (config.integrator == "rk4") {
-        integrator = std::make_unique<RK4Propagator>();
-    } else {
-        integrator = std::make_unique<EulerPropagator>();
+    // Extract base name for trajectory file
+    std::string base_name = mission_name;
+    size_t last_dot = base_name.find_last_of(".");
+    if (last_dot != std::string::npos) {
+        base_name = base_name.substr(0, last_dot);
     }
     
-    // Propagation loop
-    int step = 0;
-    double total_delta_v = 0;
+    // Propagate mission and save trajectory
+    PropagationResult prop_result = ::propagateMission(config, r_dep, r_arr, true,
+                                                       results_dir + "/" + base_name + "_trajectory.csv");
     
-    while (state.t < config.max_flight_time_s) {
-        OrbitalElements elements = computeOrbitalElements(state.r, state.v, MU_SUN);
-        
-        // Check coast condition
-        if (elements.r_a >= config.coast_threshold * r_arr) {
-            result.flight_time_days = state.t / 86400.0;
-            result.total_delta_v_km_s = total_delta_v;
-            result.final_mass_kg = state.m;
-            result.propellant_consumed_kg = config.spacecraft.initial_mass_kg - state.m;
-            result.final_apoapsis_km = elements.r_a;
-            result.final_periapsis_km = elements.r_p;
-            result.final_eccentricity = elements.e;
-            result.final_semi_major_axis_km = elements.a;
-            break;
-        }
-        
-        // Check fuel
-        if (state.m < 100) {
-            result.flight_time_days = state.t / 86400.0;
-            result.total_delta_v_km_s = total_delta_v;
-            result.final_mass_kg = state.m;
-            result.propellant_consumed_kg = config.spacecraft.initial_mass_kg - state.m;
-            result.final_apoapsis_km = 0;
-            break;
-        }
-        
-        // Calculate delta-V
-        if (config.spacecraft.thrust_mN > 1e-10) {
-            double thrust_accel = (config.spacecraft.thrust_mN * 1e-6) / state.m;
-            double delta_v_step = thrust_accel * config.timestep_s;
-            total_delta_v += delta_v_step;
-        }
-        
-        // Integration step
-        integrator->step(state, config.timestep_s,
-                        config.spacecraft.thrust_mN, config.spacecraft.isp_s,
-                        MU_SUN, G0);
-        
-        step++;
-    }
+    // Extract mission results
+    result.flight_time_days = prop_result.final_state.t / 86400.0;
+    result.total_delta_v_km_s = prop_result.total_delta_v;
+    result.final_mass_kg = prop_result.final_state.m;
+    result.propellant_consumed_kg = config.spacecraft.initial_mass_kg - prop_result.final_state.m;
+    
+    // Compute orbital elements at coast
+    OrbitalElements elements = computeOrbitalElements(prop_result.final_state.r,
+                                                      prop_result.final_state.v, MU_SUN);
+    result.final_apoapsis_km = elements.r_a;
+    result.final_periapsis_km = elements.r_p;
+    result.final_eccentricity = elements.e;
+    result.final_semi_major_axis_km = elements.a;
     
     return result;
 }
