@@ -32,7 +32,8 @@ PropagationResult propagateMission(
     std::ofstream outfile;
     if (save_trajectory && !output_filename.empty()) {
         outfile.open(output_filename);
-        outfile << "time(s),r(km),v(km/s),m(kg),ra(km),rp(km),e,a(km)\n";
+        outfile << "time(s),x(km),y(km),vx(km/s),vy(km/s),r(km),v(km/s),m(kg),"
+        << "ra(km),rp(km),e,a(km)\n";
     }
     
     // Propagation loop
@@ -51,6 +52,10 @@ PropagationResult propagateMission(
         if (outfile.is_open()) {
             outfile << std::scientific << std::setprecision(6)
                     << state.t << ","
+                    << state.r[0] << ","   // x
+                    << state.r[1] << ","   // y
+                    << state.v[0] << ","   // vx
+                    << state.v[1] << ","   // vy
                     << state.radius() << ","
                     << state.speed() << ","
                     << std::fixed << std::setprecision(2)

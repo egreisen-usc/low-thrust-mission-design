@@ -5,6 +5,8 @@ Reads trajectory and comparison CSV files and generates analysis plots
 """
 
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # Use non-GUI backend
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -14,6 +16,18 @@ from pathlib import Path
 plt.style.use('seaborn-v0_8-darkgrid')
 plt.rcParams['figure.figsize'] = (12, 6)
 plt.rcParams['font.size'] = 10
+
+# Approximate circular orbit radii around the Sun (km)
+PLANET_RADII_KM = {
+    "Mercury": 5.791e7,
+    "Venus":   1.082e8,
+    "Earth":   1.496e8,
+    "Mars":    2.279e8,
+    "Jupiter": 7.785e8,
+    "Saturn":  1.433e9,
+    "Uranus":  2.877e9,
+    "Neptune": 4.503e9
+}
 
 class MissionAnalyzer:
     def __init__(self, results_dir='../results'):
@@ -149,26 +163,31 @@ class MissionAnalyzer:
             print("No comparison data loaded")
             return
         
-        fig, ax = plt.subplots(figsize=(10, 6))
+        # Wider, shorter figure
+        fig, ax = plt.subplots(figsize=(8, 4))
         
-        # Group by thruster and get average payload fraction
         thruster_payload = self.comparison_df.groupby('Thruster')['PayloadFraction'].mean()
         
         colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D']
-        bars = ax.bar(range(len(thruster_payload)), thruster_payload.values * 100, 
-                     color=colors[:len(thruster_payload)])
+        bars = ax.bar(range(len(thruster_payload)),
+                    thruster_payload.values * 100,
+                    color=colors[:len(thruster_payload)])
         
-        ax.set_xlabel('Thruster Type', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Average Payload Fraction (%)', fontsize=12, fontweight='bold')
-        ax.set_title('Mission Efficiency: Remaining Mass After Burnout', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Thruster Type', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Average Payload Fraction (%)', fontsize=11, fontweight='bold')
+        ax.set_title('Remaining Mass After Burnout', fontsize=13, fontweight='bold')
         ax.set_xticks(range(len(thruster_payload)))
-        ax.set_xticklabels(thruster_payload.index, rotation=45, ha='right')
-        ax.set_ylim(0, 2)
+        ax.set_xticklabels(thruster_payload.index, rotation=30, ha='right')
         
-        # Add value labels on bars
-        for i, (bar, val) in enumerate(zip(bars, thruster_payload.values * 100)):
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.05,
-                   f'{val:.2f}%', ha='center', va='bottom', fontweight='bold')
+        # Auto y-limits with a bit of headroom
+        ymax = (thruster_payload.values * 100).max()
+        ax.set_ylim(0, ymax * 1.2)
+        
+        for bar, val in zip(bars, thruster_payload.values * 100):
+            ax.text(bar.get_x() + bar.get_width()/2,
+                    val + ymax * 0.03,
+                    f'{val:.2f}%',
+                    ha='center', va='bottom', fontweight='bold', fontsize=9)
         
         plt.tight_layout()
         filepath = self.results_dir / 'payload_fraction.png'
@@ -177,36 +196,75 @@ class MissionAnalyzer:
         plt.close()
     
     def plot_trajectory_2d(self, config_name):
-        """Plot 2D trajectory (XY plane)"""
+        """Plot true 2D trajectory in XY plane using propagated state, for any planet pair."""
         if config_name not in self.trajectories:
             print(f"Trajectory {config_name} not loaded")
             return
         
+        if self.comparison_df is None:
+            print("No comparison data loaded")
+            return
+        
         df = self.trajectories[config_name]
         
-        fig, ax = plt.subplots(figsize=(11, 11))
+        # Find the row in comparison_df corresponding to this mission
+        row = self.comparison_df[self.comparison_df['Mission'] == config_name]
+        if row.empty:
+            print(f"No comparison entry found for mission {config_name}")
+            return
         
-        # Plot trajectory
-        x = df['r(km)'].values  # Simplified: treating r as x position
-        t = df['time(s)'].values / 86400.0  # Convert to days
+        dep = row['From'].iloc[0]
+        arr = row['To'].iloc[0]
         
-        # Color by time
-        scatter = ax.scatter(x, t, c=t, cmap='viridis', s=2, alpha=0.6)
+        # Radii in km (fallback: None if not in dict)
+        r_dep = PLANET_RADII_KM.get(dep, None)
+        r_arr = PLANET_RADII_KM.get(arr, None)
         
-        ax.set_xlabel('Orbital Radius (km)', fontsize=12, fontweight='bold')
-        ax.set_ylabel('Time (days)', fontsize=12, fontweight='bold')
-        ax.set_title(f'Trajectory: {config_name}', fontsize=14, fontweight='bold')
+        # Trajectory state
+        x = df['x(km)'].values / 1e6
+        y = df['y(km)'].values / 1e6
+        t_days = df['time(s)'].values / 86400.0
         
-        cbar = plt.colorbar(scatter, ax=ax)
+        fig, ax = plt.subplots(figsize=(10, 10))
+        
+        sc = ax.scatter(x, y, c=t_days, cmap='viridis', s=3, alpha=0.8)
+        
+        # Start and end markers
+        ax.plot(x[0],  y[0],  'go', markersize=8, label='Start', zorder=5)
+        ax.plot(x[-1], y[-1], 'rs', markersize=8, label='End (Coast)', zorder=5)
+        
+        # Sun
+        ax.plot(0, 0, 'y*', markersize=14, label='Sun', zorder=6)
+        
+        # Reference orbits if known
+        theta = np.linspace(0, 2*np.pi, 400)
+        if r_dep is not None:
+            r_dep_m = r_dep / 1e6
+            ax.plot(r_dep_m*np.cos(theta), r_dep_m*np.sin(theta),
+                    'b--', linewidth=1.3, label=f'{dep} Orbit')
+        if r_arr is not None:
+            r_arr_m = r_arr / 1e6
+            ax.plot(r_arr_m*np.cos(theta), r_arr_m*np.sin(theta),
+                    'r--', linewidth=1.3, label=f'{arr} Orbit')
+        
+        ax.set_xlabel('X Position (million km)', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Y Position (million km)', fontsize=12, fontweight='bold')
+        ax.set_title(f'Spiral Transfer Trajectory: {dep} → {arr}\nMission: {config_name}',
+                    fontsize=14, fontweight='bold')
+        ax.set_aspect('equal', 'box')
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc='upper right', fontsize=9)
+        
+        cbar = plt.colorbar(sc, ax=ax)
         cbar.set_label('Time (days)', fontweight='bold')
         
         plt.tight_layout()
         base_name = config_name.replace('.yaml', '')
-        filepath = self.results_dir / f'trajectory_2d_{base_name}.png'
+        filepath = self.results_dir / f'trajectory_xy_{base_name}.png'
         plt.savefig(filepath, dpi=150, bbox_inches='tight')
-        print(f"✓ Saved: trajectory_2d_{base_name}.png")
+        print(f"✓ Saved: trajectory_xy_{base_name}.png")
         plt.close()
-    
+
     def plot_orbital_elements_evolution(self, config_name):
         """Plot how orbital elements change over time"""
         if config_name not in self.trajectories:
@@ -366,7 +424,7 @@ class MissionAnalyzer:
 </head>
 <body>
     <div class="header">
-        <h1>🚀 Orbital Transfer Mission Analysis Report</h1>
+        <h1>Orbital Transfer Mission Analysis Report</h1>
         <p>Low-Thrust Electric Propulsion Mission Design Study</p>
     </div>
 
@@ -511,7 +569,7 @@ def main():
     analyzer.plot_fuel_efficiency()
     analyzer.plot_payload_fraction()
     
-    # Generate trajectory-specific plots
+        # Generate trajectory-specific plots
     print("\nGenerating trajectory-specific plots...")
     for mission in analyzer.comparison_df['Mission'].unique():
         if mission in analyzer.trajectories:

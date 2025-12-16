@@ -16,7 +16,7 @@ integration:
   max_flight_time_s: 1.577e9
 
 propagation:
-  coast_threshold: 0.99
+  coast_threshold: 1.0
   thrust_direction: "parallel_to_velocity"
 
 output:
