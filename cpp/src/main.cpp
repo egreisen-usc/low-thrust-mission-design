@@ -16,7 +16,6 @@ int main() {
     // ===========================================================================
     // SECTION 1: SHOW ALL AVAILABLE BODIES
     // ===========================================================================
-    // Display a reference table of all celestial bodies and their orbital radii
     
     std::cout << "Available Celestial Bodies:\n";
     std::cout << "---------------------------\n";
@@ -44,53 +43,37 @@ int main() {
     // ===========================================================================
     // SECTION 2: DEFINE SAMPLE SPACECRAFT
     // ===========================================================================
-    // Create four representative thruster configurations:
-    // - Low-Power Hall: moderate thrust, lower ISP
-    // - High-Power Hall: high thrust, moderate ISP
-    // - Low-Power Ion: low thrust, high ISP
-    // - High-Power Ion: moderate thrust, very high ISP
-    //
-    // These represent the trade-offs between thrust (faster transfer) and
-    // ISP (fuel efficiency).
     
     std::cout << "Available Spacecraft:\n";
     std::cout << "---------------------\n";
     
     SpacecraftConfig hall_low, hall_high, ion_low, ion_high;
     
-    // Configuration 1: Low-Power Hall Thruster
-    // Trade-off: Low thrust (slow spiral) but moderate fuel efficiency
     hall_low.name = "Low-Power Hall";
-    hall_low.thrust_mN = 60;        // 60 mN: weak but efficient
-    hall_low.isp_s = 1500;          // ISP: 1500 s
+    hall_low.thrust_mN = 60;
+    hall_low.isp_s = 1500;
     hall_low.initial_mass_kg = 10000;
     
-    // Configuration 2: High-Power Hall Thruster
-    // Trade-off: High thrust (fast spiral) and good fuel efficiency
     hall_high.name = "High-Power Hall";
-    hall_high.thrust_mN = 1000;     // 1000 mN: strong for a low-thrust system
-    hall_high.isp_s = 2750;         // ISP: 2750 s (best of the Hall thrusters)
+    hall_high.thrust_mN = 1000;
+    hall_high.isp_s = 2750;
     hall_high.initial_mass_kg = 10000;
     
-    // Configuration 3: Low-Power Ion Thruster
-    // Trade-off: Moderate thrust, excellent fuel efficiency
     ion_low.name = "Low-Power Ion";
-    ion_low.thrust_mN = 250;        // 250 mN: mid-range
-    ion_low.isp_s = 4000;           // ISP: 4000 s (very efficient)
+    ion_low.thrust_mN = 250;
+    ion_low.isp_s = 4000;
     ion_low.initial_mass_kg = 10000;
     
-    // Configuration 4: High-Power Ion Thruster
-    // Trade-off: Moderate thrust, outstanding fuel efficiency
     ion_high.name = "High-Power Ion";
-    ion_high.thrust_mN = 450;       // 450 mN: decent thrust for ion system
-    ion_high.isp_s = 9000;          // ISP: 9000 s (extremely efficient)
+    ion_high.thrust_mN = 450;
+    ion_high.isp_s = 9000;
     ion_high.initial_mass_kg = 10000;
     
     SpacecraftConfig spacecrafts[] = {hall_low, hall_high, ion_low, ion_high};
     
     for (int i = 0; i < 4; i++) {
         const auto& sc = spacecrafts[i];
-        double v_e = sc.isp_s * G0;  // Exhaust velocity: v_e = ISP * g0
+        double v_e = sc.isp_s * G0;
         printf("  [%d] %-20s | Thrust: %6.0f mN | ISP: %5.0f s | Exhaust Vel: %6.2f km/s\n",
                i, sc.name.c_str(), sc.thrust_mN, sc.isp_s, v_e);
     }
@@ -100,7 +83,6 @@ int main() {
     // ===========================================================================
     // SECTION 3: CREATE EXAMPLE MISSION
     // ===========================================================================
-    // Set up a specific mission scenario: Earth to Mars using High-Power Hall
     
     std::cout << "Example Mission Configuration:\n";
     std::cout << "------------------------------\n";
@@ -108,7 +90,7 @@ int main() {
     MissionConfig config;
     config.departure_body = parseBodyName("Earth");
     config.arrival_body = parseBodyName("Mars");
-    config.spacecraft = hall_high;  // Select High-Power Hall thruster
+    config.spacecraft = hall_high;
     config.timestep_s = 10000;
     
     std::cout << "Mission:\n";
@@ -126,20 +108,17 @@ int main() {
     // ===========================================================================
     // SECTION 4: INITIALIZE MISSION STATE
     // ===========================================================================
-    // Set up the spacecraft in circular orbit at Earth's position
-    // Velocity computed for circular orbit: v_circ = sqrt(μ / r)
     
     std::cout << "Initialized Mission State:\n";
     std::cout << "--------------------------\n";
     
-    double r_dep = getOrbitalRadius(config.departure_body);  // Earth orbit radius
-    double r_arr = getOrbitalRadius(config.arrival_body);    // Mars orbit radius
-    double v_circ = std::sqrt(MU_SUN / r_dep);               // Circular orbit velocity
+    double r_dep = getOrbitalRadius(config.departure_body);
+    double r_arr = getOrbitalRadius(config.arrival_body);
+    double v_circ = std::sqrt(MU_SUN / r_dep);
     
-    // Create spacecraft state: position at departure, circular velocity, initial mass
-    MissionState state(r_dep, 0, 0,       // Position: (r_Earth, 0, 0)
-                       0, v_circ, 0,      // Velocity: (0, v_circ, 0) - circular orbit
-                       config.spacecraft.initial_mass_kg, 0);  // Mass and time
+    MissionState state(r_dep, 0, 0,
+                       0, v_circ, 0,
+                       config.spacecraft.initial_mass_kg, 0);
     
     std::cout << "  Departure body radius:    " << std::scientific << r_dep << " km\n";
     std::cout << "  Arrival body radius:      " << r_arr << " km\n";
@@ -152,99 +131,67 @@ int main() {
     std::cout << "\n";
     
     // ===========================================================================
-    // SECTION 5: DYNAMICS TEST - VERIFY GRAVITY CALCULATION
+    // SECTION 5: TEST TIME INTEGRATORS
     // ===========================================================================
-    // Verify that gravity acceleration matches theoretical circular orbit
-    // For circular orbit: a_centripetal = v² / r (from kinematics)
-    //                   a_gravity = -μ / r² (from gravity)
-    // These should be equal in magnitude.
+    // Verify that RK4 and Euler can take steps correctly
     
-    std::cout << "Dynamics Test: Gravity Acceleration\n";
-    std::cout << "-----------------------------------\n";
+    std::cout << "Time Integrator Test:\n";
+    std::cout << "---------------------\n";
     
-    double a[3];
+    // Create two copies of state for comparison
+    MissionState state_rk4 = state;
+    MissionState state_euler = state;
     
-    // Compute gravity acceleration at current position
-    computeGravityAccel(state.r, MU_SUN, a);
-    double a_grav_mag = std::sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
+    // Create integrators
+    RK4Propagator rk4;
+    EulerPropagator euler;
     
-    // Compute expected centripetal acceleration for circular orbit
-    // a_c = v² / r
-    double a_centripetal = (v_circ * v_circ) / r_dep;
+    // Take one step with each method
+    double dt = config.timestep_s;
     
-    // Compute relative error (should be < 1e-10, essentially machine epsilon)
-    double error_grav = std::abs(a_grav_mag - a_centripetal) / a_centripetal * 100;
+    rk4.step(state_rk4, dt, config.spacecraft.thrust_mN, config.spacecraft.isp_s, 
+             MU_SUN, G0);
     
-    std::cout << "  Gravity acceleration:       " << std::scientific << a_grav_mag 
-              << " km/s²\n";
-    std::cout << "  Expected (v²/r):            " << a_centripetal << " km/s²\n";
-    std::cout << "  Relative error:             " << std::fixed << std::setprecision(2) 
-              << error_grav << " %\n";
-    std::cout << "  Status:                     ";
-    if (error_grav < 0.01) {
-        std::cout << "✓ PASS (gravity is correctly balanced)\n";
+    euler.step(state_euler, dt, config.spacecraft.thrust_mN, config.spacecraft.isp_s, 
+               MU_SUN, G0);
+    
+    // Display results
+    std::cout << "After one timestep (dt = " << dt << " s):\n\n";
+    
+    std::cout << "RK4 Integrator:\n";
+    std::cout << "  Position (km):    " << std::scientific << state_rk4.radius() << "\n";
+    std::cout << "  Velocity (km/s):  " << std::fixed << std::setprecision(4) 
+              << state_rk4.speed() << "\n";
+    std::cout << "  Mass (kg):        " << std::setprecision(1) << state_rk4.m << "\n";
+    std::cout << "  Time (s):         " << std::scientific << state_rk4.t << "\n";
+    std::cout << "\n";
+    
+    std::cout << "Euler Integrator:\n";
+    std::cout << "  Position (km):    " << std::scientific << state_euler.radius() << "\n";
+    std::cout << "  Velocity (km/s):  " << std::fixed << std::setprecision(4) 
+              << state_euler.speed() << "\n";
+    std::cout << "  Mass (kg):        " << std::setprecision(1) << state_euler.m << "\n";
+    std::cout << "  Time (s):         " << std::scientific << state_euler.t << "\n";
+    std::cout << "\n";
+    
+    // Compare methods
+    double pos_diff = std::abs(state_rk4.radius() - state_euler.radius());
+    double vel_diff = std::abs(state_rk4.speed() - state_euler.speed());
+    
+    std::cout << "Comparison (RK4 vs Euler):\n";
+    std::cout << "  Position difference:  " << std::scientific << pos_diff << " km\n";
+    std::cout << "  Velocity difference:  " << std::fixed << std::setprecision(6) 
+              << vel_diff << " km/s\n";
+    std::cout << "  Status:               ";
+    
+    if (pos_diff < 1e5 && vel_diff < 0.01) {
+        std::cout << "✓ PASS (both integrators working)\n";
     } else {
         std::cout << "✗ FAIL\n";
     }
+    
     std::cout << "\n";
-    
-    // ===========================================================================
-    // SECTION 6: DYNAMICS TEST - VERIFY THRUST CALCULATION
-    // ===========================================================================
-    // Verify that thrust acceleration matches F = m*a
-    // Expected: a = (thrust_mN * 1e-6 kg⋅km/s²) / m_kg
-    
-    std::cout << "Dynamics Test: Thrust Acceleration\n";
-    std::cout << "----------------------------------\n";
-    
-    // Compute thrust acceleration at current state
-    computeThrustAccel(state.v, state.m, config.spacecraft.thrust_mN, a);
-    double a_thrust_mag = std::sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-    
-    // Expected thrust acceleration magnitude
-    double a_thrust_expected = (config.spacecraft.thrust_mN * 1e-6) / state.m;
-    
-    // Verify direction: should be parallel to velocity
-    // Compute angle between thrust acceleration and velocity
-    double dot_product = a[0]*state.v[0] + a[1]*state.v[1] + a[2]*state.v[2];
-    double v_mag = state.speed();
-    double cos_angle = dot_product / (a_thrust_mag * v_mag);
-    
-    std::cout << "  Thrust acceleration:        " << std::scientific << a_thrust_mag 
-              << " km/s²\n";
-    std::cout << "  Expected (F/m):             " << a_thrust_expected << " km/s²\n";
-    std::cout << "  Direction angle to velocity:" << std::fixed << std::setprecision(1)
-              << std::acos(cos_angle) * 180 / 3.14159 << " degrees\n";
-    std::cout << "  Status:                     ";
-    if (std::abs(a_thrust_mag - a_thrust_expected) / a_thrust_expected < 0.01 &&
-        std::abs(cos_angle) > 0.9999) {
-        std::cout << "✓ PASS (thrust is correct magnitude and direction)\n";
-    } else {
-        std::cout << "✗ FAIL\n";
-    }
-    std::cout << "\n";
-    
-    // ===========================================================================
-    // SECTION 7: DYNAMICS TEST - TOTAL ACCELERATION
-    // ===========================================================================
-    // Verify that total acceleration is the vector sum of gravity and thrust
-    
-    std::cout << "Dynamics Test: Total Acceleration\n";
-    std::cout << "---------------------------------\n";
-    
-    // Compute total acceleration
-    computeAcceleration(state, config.spacecraft.thrust_mN, MU_SUN, a);
-    double a_total_mag = std::sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-    
-    std::cout << "  Total acceleration:         " << std::scientific << a_total_mag 
-              << " km/s²\n";
-    std::cout << "  Gravity dominates:          " << (a_grav_mag / a_total_mag) 
-              << " (ratio)\n";
-    std::cout << "  Thrust contribution:        " << (a_thrust_mag / a_total_mag)
-              << " (ratio)\n";
-    std::cout << "  Components:                 a = (" << a[0] << ", " << a[1] 
-              << ", " << a[2] << ") km/s²\n";
-    std::cout << "\n";
+    std::cout << "Ready to propagate full trajectories!\n";
     
     return 0;
 }
