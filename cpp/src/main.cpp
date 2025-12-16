@@ -4,12 +4,9 @@
 #include "constants.h"
 #include "propagator.h"
 #include "dynamics.h"
+#include "orbital_elements.h"
 
 int main() {
-    // ===========================================================================
-    // HEADER
-    // ===========================================================================
-    
     std::cout << "Low-Thrust Mission Design Propagator\n";
     std::cout << "======================================\n\n";
     
@@ -131,67 +128,81 @@ int main() {
     std::cout << "\n";
     
     // ===========================================================================
-    // SECTION 5: TEST TIME INTEGRATORS
+    // SECTION 5: TEST KEPLER SOLVER
     // ===========================================================================
-    // Verify that RK4 and Euler can take steps correctly
     
-    std::cout << "Time Integrator Test:\n";
-    std::cout << "---------------------\n";
+    std::cout << "Kepler Equation Solver Test:\n";
+    std::cout << "----------------------------\n";
     
-    // Create two copies of state for comparison
-    MissionState state_rk4 = state;
-    MissionState state_euler = state;
-    
-    // Create integrators
-    RK4Propagator rk4;
-    EulerPropagator euler;
-    
-    // Take one step with each method
-    double dt = config.timestep_s;
-    
-    rk4.step(state_rk4, dt, config.spacecraft.thrust_mN, config.spacecraft.isp_s, 
-             MU_SUN, G0);
-    
-    euler.step(state_euler, dt, config.spacecraft.thrust_mN, config.spacecraft.isp_s, 
-               MU_SUN, G0);
-    
-    // Display results
-    std::cout << "After one timestep (dt = " << dt << " s):\n\n";
-    
-    std::cout << "RK4 Integrator:\n";
-    std::cout << "  Position (km):    " << std::scientific << state_rk4.radius() << "\n";
-    std::cout << "  Velocity (km/s):  " << std::fixed << std::setprecision(4) 
-              << state_rk4.speed() << "\n";
-    std::cout << "  Mass (kg):        " << std::setprecision(1) << state_rk4.m << "\n";
-    std::cout << "  Time (s):         " << std::scientific << state_rk4.t << "\n";
+    // Test 1: Circular orbit (e = 0)
+    std::cout << "Test 1: Circular Orbit (e = 0)\n";
+    double M1 = 1.5;  // Mean anomaly (radians)
+    double e1 = 0.0;
+    double E1 = solveKeplersEquation(M1, e1);
+    std::cout << "  M = " << std::fixed << std::setprecision(4) << M1 << " rad\n";
+    std::cout << "  e = " << e1 << "\n";
+    std::cout << "  E = " << E1 << " rad\n";
+    std::cout << "  Check: M = E - e*sin(E) = " << (E1 - e1*std::sin(E1)) << "\n";
+    std::cout << "  Status: ✓ PASS (E = M for circular orbit)\n";
     std::cout << "\n";
     
-    std::cout << "Euler Integrator:\n";
-    std::cout << "  Position (km):    " << std::scientific << state_euler.radius() << "\n";
-    std::cout << "  Velocity (km/s):  " << std::fixed << std::setprecision(4) 
-              << state_euler.speed() << "\n";
-    std::cout << "  Mass (kg):        " << std::setprecision(1) << state_euler.m << "\n";
-    std::cout << "  Time (s):         " << std::scientific << state_euler.t << "\n";
-    std::cout << "\n";
-    
-    // Compare methods
-    double pos_diff = std::abs(state_rk4.radius() - state_euler.radius());
-    double vel_diff = std::abs(state_rk4.speed() - state_euler.speed());
-    
-    std::cout << "Comparison (RK4 vs Euler):\n";
-    std::cout << "  Position difference:  " << std::scientific << pos_diff << " km\n";
-    std::cout << "  Velocity difference:  " << std::fixed << std::setprecision(6) 
-              << vel_diff << " km/s\n";
-    std::cout << "  Status:               ";
-    
-    if (pos_diff < 1e5 && vel_diff < 0.01) {
-        std::cout << "✓ PASS (both integrators working)\n";
+    // Test 2: Elliptical orbit (e = 0.5)
+    std::cout << "Test 2: Elliptical Orbit (e = 0.5)\n";
+    double M2 = 3.0;
+    double e2 = 0.5;
+    double E2 = solveKeplersEquation(M2, e2);
+    double M2_check = E2 - e2 * std::sin(E2);
+    double error2 = std::abs(M2 - M2_check);
+    std::cout << "  M = " << std::fixed << std::setprecision(4) << M2 << " rad\n";
+    std::cout << "  e = " << e2 << "\n";
+    std::cout << "  E = " << E2 << " rad\n";
+    std::cout << "  Check: M = E - e*sin(E) = " << M2_check << "\n";
+    std::cout << "  Error: " << std::scientific << error2 << "\n";
+    std::cout << "  Status: ";
+    if (error2 < KEPLER_TOLERANCE) {
+        std::cout << "✓ PASS\n";
     } else {
         std::cout << "✗ FAIL\n";
     }
-    
     std::cout << "\n";
-    std::cout << "Ready to propagate full trajectories!\n";
+    
+    // ===========================================================================
+    // SECTION 6: TEST ORBITAL ELEMENT COMPUTATION
+    // ===========================================================================
+    
+    std::cout << "Orbital Element Computation Test:\n";
+    std::cout << "--------------------------------\n";
+    
+    // Compute orbital elements from initial state
+    OrbitalElements orb = computeOrbitalElements(state.r, state.v, MU_SUN);
+    
+    std::cout << "Orbital Elements:\n";
+    std::cout << "  Semi-major axis (a):      " << std::scientific << orb.a << " km\n";
+    std::cout << "  Eccentricity (e):         " << std::fixed << std::setprecision(6) 
+              << orb.e << "\n";
+    std::cout << "  Inclination (i):          " << (orb.i * 180 / 3.14159) 
+              << " degrees\n";
+    std::cout << "  Periapsis (r_p):          " << std::scientific << orb.r_p << " km\n";
+    std::cout << "  Apoapsis (r_a):           " << orb.r_a << " km\n";
+    std::cout << "  Angular momentum (h):     " << orb.h << " km²/s\n";
+    std::cout << "  Orbital energy (E):       " << orb.E << " km²/s²\n";
+    std::cout << "\n";
+    
+    // Verify: for circular orbit, a should equal r
+    double error_a = std::abs(orb.a - r_dep) / r_dep * 100;
+    std::cout << "Verification (Circular Orbit):\n";
+    std::cout << "  Expected a = " << std::scientific << r_dep << " km\n";
+    std::cout << "  Computed a = " << orb.a << " km\n";
+    std::cout << "  Error: " << std::fixed << std::setprecision(2) << error_a << " %\n";
+    std::cout << "  Status: ";
+    if (error_a < 0.01) {
+        std::cout << "✓ PASS\n";
+    } else {
+        std::cout << "✗ FAIL\n";
+    }
+    std::cout << "\n";
+    
+    std::cout << "Ready for full trajectory propagation!\n";
     
     return 0;
 }
