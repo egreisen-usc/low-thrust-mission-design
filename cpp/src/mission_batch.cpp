@@ -83,10 +83,13 @@ MissionConfig loadConfigFromYAML(const std::string& filename) {
         if (yaml["integration"]) {
             YAML::Node integration = yaml["integration"];
             if (integration["method"]) {
-                config.integrator = integration["method"].as<std::string>();
+            config.integrator = integration["method"].as<std::string>();
             }
+            std::cerr << "DEBUG: integration['timestep_s'] raw value\n";
             if (integration["timestep_s"]) {
-                config.timestep_s = integration["timestep_s"].as<double>();
+                double ts_val = integration["timestep_s"].as<double>();
+                std::cerr << "DEBUG: timestep_s from YAML = " << ts_val << " s\n";
+                config.timestep_s = ts_val;
             }
             if (integration["max_flight_time_s"]) {
                 config.max_flight_time_s = integration["max_flight_time_s"].as<double>();

@@ -31,3 +31,4 @@ convergence_study/
 # System
 .DS_Store
 *.log
+DEBUG_DUMP.txt

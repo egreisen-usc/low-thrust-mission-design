@@ -9,7 +9,7 @@ spacecraft:
   isp_s: 9000
 
 integration:
-  method: "rk4"
+  method: "euler"
   timestep_s: 1000
   max_flight_time_s: 86400000
 

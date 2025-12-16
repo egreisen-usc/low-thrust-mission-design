@@ -71,7 +71,8 @@ void runSingleMissionMode(const std::string& config_path, double timestep_overri
     std::cout << "  Integrator: " << config.integrator << "\n";
     std::cout << "  Timestep: " << config.timestep_s << " s";
     if (timestep_override > 0) {
-        std::cout << " (overridden)";
+        config.timestep_s = timestep_override;
+        std::cout << " DEBUG: Timestep override applied: " << config.timestep_s << " s\n";
     }
     std::cout << "\n\n";
     
