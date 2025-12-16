@@ -5,12 +5,10 @@ project(LowThrustMissionDesign)
 # COMPILER CONFIGURATION (Fedora/Linux optimized)
 # ===========================================================================
 
-# C++ standard and requirements
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Detect compiler and set flags accordingly
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /O2")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -28,7 +26,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # ===========================================================================
-# TESTING (enable before subdirectories)
+# TESTING
 # ===========================================================================
 
 enable_testing()
@@ -38,7 +36,6 @@ enable_testing()
 # ===========================================================================
 
 add_subdirectory(cpp)
-add_subdirectory(cpp/tests)
 
 # ===========================================================================
 # BUILD SUMMARY

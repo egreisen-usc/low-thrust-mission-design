@@ -198,7 +198,6 @@ OrbitalElements computeOrbitalElements(const double r[3], const double v[3],
     // ω = arctan2(e_z / sin(i), (e_x*cos(Ω) + e_y*sin(Ω)))
     double cos_Omega = std::cos(elements.Omega);
     double sin_Omega = std::sin(elements.Omega);
-    double cos_i = std::cos(elements.i);
     double sin_i = std::sin(elements.i);
     
     if (std::abs(sin_i) > 1e-10) {
