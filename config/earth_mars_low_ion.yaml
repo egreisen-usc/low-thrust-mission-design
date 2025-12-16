@@ -1,0 +1,25 @@
+mission:
+  name: "Earth to Mars Baseline Transfer"
+  description: "Low-thrust spiral transfer from Earth to Mars orbit"
+  departure_body: "Earth"
+  arrival_body: "Mars"
+  initial_mass_kg: 10000
+
+spacecraft:
+  name: "Low-Power Ion"
+  thrust_mN: 1000
+  isp_s: 2750
+
+integration:
+  method: "rk4"
+  timestep_s: 10000
+  max_flight_time_s: 1.577e9
+
+propagation:
+  coast_threshold: 0.99
+  thrust_direction: "parallel_to_velocity"
+
+output:
+  filename: "results/earth_mars_low_ion.csv"
+  save_interval: 1
+  print_interval: 10000
