@@ -1,0 +1,18 @@
+mission:
+  initial_mass_kg: 10000
+  departure_body: Earth
+  arrival_body: Venus
+
+spacecraft:
+  name: High-Power Hall   # 1000 mN, 2750 s from C++ mapping
+
+integration:
+  method: rk4
+  timestep_s: 10000
+  max_flight_time_s: 5.0e8   # ~15.8 years; generous upper bound
+
+propagation:
+  coast_threshold: 0.999      # coast when apoapsis reaches Venus radius
+
+output:
+  filename: earth_venus_high_hall_trajectory.csv

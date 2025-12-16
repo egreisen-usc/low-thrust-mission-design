@@ -1,0 +1,18 @@
+mission:
+  initial_mass_kg: 10000
+  departure_body: Earth
+  arrival_body: Jupiter
+
+spacecraft:
+  name: High-Power Ion
+
+integration:
+  method: rk4
+  timestep_s: 20000        # larger dt for very long flight
+  max_flight_time_s: 2.0e9 # ~63 years; outer transfer is long
+
+propagation:
+  coast_threshold: 0.999
+
+output:
+  filename: earth_jupiter_high_ion_trajectory.csv

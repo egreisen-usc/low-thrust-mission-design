@@ -17,7 +17,7 @@
 
 void RK4Propagator::step(MissionState& state, double dt,
                          double thrust_mN, double isp_s,
-                         double mu, double g0) {
+                         double mu, double g0, int thrust_direction) {
     
     // ===========================================================================
     // STAGE 1: Evaluate at beginning of interval
@@ -25,7 +25,7 @@ void RK4Propagator::step(MissionState& state, double dt,
     
     // k1 = acceleration at (t, r, v)
     double k1[3];
-    computeAcceleration(state, thrust_mN, mu, k1);
+    computeAcceleration(state, thrust_mN, mu, k1, thrust_direction);
     
     // Velocity at current time (used for position update)
     double v_k1[3] = {state.v[0], state.v[1], state.v[2]};
@@ -57,7 +57,7 @@ void RK4Propagator::step(MissionState& state, double dt,
     
     // k2 = acceleration at midpoint
     double k2[3];
-    computeAcceleration(state_mid, thrust_mN, mu, k2);
+    computeAcceleration(state_mid, thrust_mN, mu, k2, thrust_direction);
     
     // Velocity at midpoint
     double v_k2[3] = {v_mid[0], v_mid[1], v_mid[2]};
@@ -79,7 +79,7 @@ void RK4Propagator::step(MissionState& state, double dt,
     
     // k3 = acceleration at this midpoint configuration
     double k3[3];
-    computeAcceleration(state_mid, thrust_mN, mu, k3);
+    computeAcceleration(state_mid, thrust_mN, mu, k3, thrust_direction);
     
     // Velocity at this midpoint
     double v_k3[3] = {v_mid2[0], v_mid2[1], v_mid2[2]};
@@ -110,7 +110,7 @@ void RK4Propagator::step(MissionState& state, double dt,
     
     // k4 = acceleration at end of interval
     double k4[3];
-    computeAcceleration(state_end, thrust_mN, mu, k4);
+    computeAcceleration(state_end, thrust_mN, mu, k4, thrust_direction);
     
     // Velocity at end of interval
     double v_k4[3] = {v_end[0], v_end[1], v_end[2]};
@@ -167,14 +167,14 @@ void RK4Propagator::step(MissionState& state, double dt,
 
 void EulerPropagator::step(MissionState& state, double dt,
                            double thrust_mN, double isp_s,
-                           double mu, double g0) {
+                           double mu, double g0, int thrust_direction) {
     
     // ===========================================================================
     // STEP 1: Evaluate acceleration at current state
     // ===========================================================================
     
     double a[3];
-    computeAcceleration(state, thrust_mN, mu, a);
+    computeAcceleration(state, thrust_mN, mu, a, thrust_direction);
     
     // ===========================================================================
     // STEP 2: Update velocity

@@ -1,0 +1,18 @@
+mission:
+  initial_mass_kg: 10000
+  departure_body: Earth
+  arrival_body: Venus
+
+spacecraft:
+  name: Low-Power Ion      # 250 mN, 4000 s
+
+integration:
+  method: rk4
+  timestep_s: 10000
+  max_flight_time_s: 5.0e8
+
+propagation:
+  coast_threshold: 0.999
+
+output:
+  filename: earth_venus_low_ion_trajectory.csv

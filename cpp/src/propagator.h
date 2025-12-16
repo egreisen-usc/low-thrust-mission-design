@@ -67,6 +67,9 @@ struct MissionConfig {
     // Termination condition
     double max_flight_time_s = 7.884e8;  // ~25 years
     double coast_threshold = 0.999;      // coast when apoapsis >= threshold * target_radius
+
+    // Thrust direction (prograde/retrograde)
+    int thrust_direction = 1;  // +1 for outward, -1 for inward
     
     // Output file
     std::string output_filename = "results/trajectory.csv";
@@ -80,16 +83,9 @@ class Propagator {
 public:
     virtual ~Propagator() = default;
     
-    /// Advance state by one timestep
-    /// @param state: [in/out] spacecraft state
-    /// @param dt: timestep (s)
-    /// @param thrust_mN: thrust magnitude (mN)
-    /// @param isp_s: specific impulse (s)
-    /// @param mu: gravitational parameter (km³/s²)
-    /// @param g0: gravitational acceleration constant (km/s²)
     virtual void step(MissionState& state, double dt,
                      double thrust_mN, double isp_s,
-                     double mu, double g0) = 0;
+                     double mu, double g0, int thrust_direction = 1) = 0;
 };
 
 // ===========================================================================
@@ -101,15 +97,14 @@ class RK4Propagator : public Propagator {
 public:
     void step(MissionState& state, double dt,
              double thrust_mN, double isp_s,
-             double mu, double g0) override;
+             double mu, double g0, int thrust_direction = 1) override;
 };
 
-/// Forward Euler integrator
 class EulerPropagator : public Propagator {
 public:
     void step(MissionState& state, double dt,
              double thrust_mN, double isp_s,
-             double mu, double g0) override;
+             double mu, double g0, int thrust_direction = 1) override;
 };
 
 #endif // PROPAGATOR_H

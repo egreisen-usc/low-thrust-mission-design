@@ -107,30 +107,30 @@
 </head>
 <body>
     <div class="header">
-        <h1>🚀 Orbital Transfer Mission Analysis Report</h1>
+        <h1>Orbital Transfer Mission Analysis Report</h1>
         <p>Low-Thrust Electric Propulsion Mission Design Study</p>
     </div>
 
     <div class="summary-box">
         <h2>Executive Summary</h2>
 
-        <p>This analysis covers <strong>2</strong> mission scenarios with various electric propulsion systems.</p>
+        <p>This analysis covers <strong>4</strong> mission scenarios with various electric propulsion systems.</p>
         
         <div>
             <div class="metric">
-                <div class="metric-value">516.8</div>
+                <div class="metric-value">516.0</div>
                 <div class="metric-label">Fastest Transfer (days)</div>
             </div>
             <div class="metric">
-                <div class="metric-value">4.88</div>
+                <div class="metric-value">4.87</div>
                 <div class="metric-label">Minimum Delta-V (km/s)</div>
             </div>
             <div class="metric">
-                <div class="metric-value">87.35%</div>
+                <div class="metric-value">94.30%</div>
                 <div class="metric-label">Best Payload Fraction</div>
             </div>
             <div class="metric">
-                <div class="metric-value">0.004</div>
+                <div class="metric-value">0.009</div>
                 <div class="metric-label">Max Fuel Efficiency</div>
             </div>
         </div>
@@ -175,21 +175,39 @@
             <tbody>
 
                 <tr>
-                    <td>earth_mars_baseline.yaml</td>
+                    <td>earth_mars_high_hall.yaml</td>
                     <td>High-Power Hall</td>
-                    <td>516.8</td>
-                    <td>4.88</td>
-                    <td>1655</td>
-                    <td>83.45%</td>
+                    <td>516.0</td>
+                    <td>4.87</td>
+                    <td>1652</td>
+                    <td>83.48%</td>
+                </tr>
+
+                <tr>
+                    <td>earth_mars_low_hall.yaml</td>
+                    <td>Low-Power Hall</td>
+                    <td>8935.9</td>
+                    <td>5.56</td>
+                    <td>3148</td>
+                    <td>68.52%</td>
+                </tr>
+
+                <tr>
+                    <td>earth_mars_high_ion.yaml</td>
+                    <td>High-Power Ion</td>
+                    <td>1295.5</td>
+                    <td>5.19</td>
+                    <td>570</td>
+                    <td>94.30%</td>
                 </tr>
 
                 <tr>
                     <td>earth_mars_low_ion.yaml</td>
                     <td>Low-Power Ion</td>
-                    <td>2299.0</td>
-                    <td>5.31</td>
-                    <td>1265</td>
-                    <td>87.35%</td>
+                    <td>2356.1</td>
+                    <td>5.45</td>
+                    <td>1297</td>
+                    <td>87.03%</td>
                 </tr>
 
             </tbody>

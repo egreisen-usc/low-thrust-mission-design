@@ -68,7 +68,8 @@ void computeGravityAccel(const double r[3], double mu, double a[3]);
 /// @param thrust_mN: thrust magnitude (millinewtons)
 /// @param a: [output] acceleration vector (km/s²) [ax, ay, az]
 ///           Computed in-place; direction is along velocity
-void computeThrustAccel(const double v[3], double m, double thrust_mN, double a[3]);
+void computeThrustAccel(const double v[3], double m, double thrust_mN, 
+                        double a[3], int thrust_direction = 1);
 
 /// Compute total acceleration (gravity + thrust combined)
 ///
@@ -91,6 +92,6 @@ void computeThrustAccel(const double v[3], double m, double thrust_mN, double a[
 /// @param a: [output] acceleration vector (km/s²) [ax, ay, az]
 ///           Computed in-place; combination of both effects
 void computeAcceleration(const MissionState& state, double thrust_mN, 
-                        double mu, double a[3]);
+                        double mu, double a[3], int thrust_direction = 1);
 
 #endif // DYNAMICS_H

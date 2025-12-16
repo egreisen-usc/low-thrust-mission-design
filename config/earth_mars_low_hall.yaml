@@ -4,7 +4,7 @@ mission:
   initial_mass_kg: 10000
 
 spacecraft:
-  name: "Low-Power Ion"
+  name: Low-Power Hall
   thrust_mN: 1000
   isp_s: 2750
 
@@ -17,6 +17,6 @@ propagation:
   coast_threshold: 0.999
 
 output:
-  filename: earth_mars_low_ion_trajectory.csv
+  filename: earth_mars_low_hall_trajectory.csv
   save_interval: 1
   print_interval: 10000

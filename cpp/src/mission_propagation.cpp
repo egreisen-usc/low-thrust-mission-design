@@ -14,6 +14,9 @@ PropagationResult propagateMission(
     const std::string& output_filename) {
     
     PropagationResult result;
+
+    // Determine thrust direction based on transfer type
+    int thrust_direction = (r_arrival > r_departure) ? 1 : -1;
     
     // Initialize orbital state
     double v_circ = std::sqrt(MU_SUN / r_departure);
@@ -70,7 +73,18 @@ PropagationResult propagateMission(
         }
         
         // Check coast condition
-        if (elements.r_a >= config.coast_threshold * r_arrival && coast_step < 0) {
+        // For outbound: coast when apoapsis >= arrival radius
+        // For inbound: coast when periapsis <= arrival radius
+        bool coast_reached = false;
+        if (thrust_direction > 0) {
+            // Outbound: check apoapsis
+            coast_reached = (elements.r_a >= config.coast_threshold * r_arrival);
+        } else {
+            // Inbound: check periapsis
+            coast_reached = (elements.r_p <= config.coast_threshold * r_arrival);
+        }
+        
+        if (coast_reached && coast_step < 0) {
             coast_step = step;
         }
         
@@ -100,7 +114,7 @@ PropagationResult propagateMission(
         // Integration step
         integrator->step(state, config.timestep_s,
                         config.spacecraft.thrust_mN, config.spacecraft.isp_s,
-                        MU_SUN, G0);
+                        MU_SUN, G0, thrust_direction);
         
         step++;
     }

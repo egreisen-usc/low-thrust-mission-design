@@ -1,12 +1,10 @@
 mission:
-  name: "Earth to Mars Baseline Transfer"
-  description: "Low-thrust spiral transfer from Earth to Mars orbit"
   departure_body: "Earth"
   arrival_body: "Mars"
   initial_mass_kg: 10000
 
 spacecraft:
-  name: "High-Power Hall"
+  name: High-Power Ion
   thrust_mN: 1000
   isp_s: 2750
 
@@ -16,10 +14,9 @@ integration:
   max_flight_time_s: 1.577e9
 
 propagation:
-  coast_threshold: 1.0
-  thrust_direction: "parallel_to_velocity"
+  coast_threshold: 0.999
 
 output:
-  filename: "results/earth_mars_baseline_trajectory.csv"
+  filename: earth_mars_high_ion_trajectory.csv
   save_interval: 1
   print_interval: 10000
