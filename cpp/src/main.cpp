@@ -67,8 +67,9 @@ void runSingleMissionMode(const std::string& config_path) {
     }
     
     // Create output file
-    createDirectory("results");
-    std::ofstream outfile("results/" + config.output_filename);
+    std::string results_dir = "../results";
+    createDirectory(results_dir);
+    std::ofstream outfile(results_dir + "/" + config.output_filename);
     outfile << "time(s),r(km),v(km/s),m(kg),ra(km),rp(km),e,a(km)\n";
     
     // Propagation loop
@@ -207,8 +208,11 @@ void runBatchMissionMode(const std::string& batch_config_file) {
     comparison.printSummary();
     
     // Write detailed comparison CSV
-    createDirectory("results");
-    comparison.writeComparisonCSV("results/mission_comparison.csv");
+    std::string results_dir = "../results";
+    createDirectory(results_dir);
+    comparison.writeComparisonCSV(results_dir + "/mission_comparison.csv");
+
+
     
     std::cout << "=====================================================\n\n";
 }

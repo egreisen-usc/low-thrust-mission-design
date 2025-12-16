@@ -24,6 +24,14 @@ bool createDirectory(const std::string& path) {
     #endif
 }
 
+std::string getResultsDirectory() {
+    // When running from build/bin/, we need to go up 2 levels to project root
+    // Then into results/
+    std::string results_path = "../results";
+    createDirectory(results_path);
+    return results_path;
+}
+
 // ===========================================================================
 // CONFIGURATION LOADER
 // ===========================================================================

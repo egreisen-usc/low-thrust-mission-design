@@ -20,6 +20,6 @@ propagation:
   thrust_direction: "parallel_to_velocity"
 
 output:
-  filename: "results/earth_mars_baseline.csv"
+  filename: "results/earth_mars_baseline_trajectory.csv"
   save_interval: 1
   print_interval: 10000
