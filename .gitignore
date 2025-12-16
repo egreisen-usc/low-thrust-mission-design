@@ -23,6 +23,7 @@ env/
 results/*.csv
 results/*.png
 results/*.pdf
+results/*.html
 !results/.gitkeep
 
 # Convergence Study
