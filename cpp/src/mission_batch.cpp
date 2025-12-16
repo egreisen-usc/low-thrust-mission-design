@@ -13,7 +13,7 @@
 #include "mission_batch.h"
 
 // ===========================================================================
-// DIRECTORY CREATION HELPER (from main.cpp)
+// DIRECTORY CREATION HELPER
 // ===========================================================================
 
 bool createDirectory(const std::string& path) {
@@ -25,7 +25,7 @@ bool createDirectory(const std::string& path) {
 }
 
 // ===========================================================================
-// CONFIGURATION LOADER (from main.cpp)
+// CONFIGURATION LOADER
 // ===========================================================================
 
 MissionConfig loadConfigFromYAML(const std::string& filename) {

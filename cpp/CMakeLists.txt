@@ -15,6 +15,7 @@ set(PROPAGATOR_SOURCES
     src/dynamics.cpp
     src/orbital_elements.cpp
     src/comparison.cpp
+    src/mission_batch.cpp
 )
 
 add_executable(propagate_trajectory ${PROPAGATOR_SOURCES})
