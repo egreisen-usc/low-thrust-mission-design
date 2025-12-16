@@ -25,6 +25,9 @@ results/*.png
 results/*.pdf
 !results/.gitkeep
 
+# Convergence Study
+convergence_study/
+
 # System
 .DS_Store
 *.log

@@ -15,15 +15,39 @@
 #include "mission_batch.h"
 #include "mission_propagation.h"
 
+
 // Forward declarations - these are defined in mission_batch.cpp
 bool createDirectory(const std::string& path);
 MissionConfig loadConfigFromYAML(const std::string& filename);
+
+
+// ===========================================================================
+// HELPER: Parse command-line timestep override
+// ===========================================================================
+
+double parseTimestepOverride(int argc, char* argv[]) {
+    for (int i = 1; i < argc - 1; ++i) {
+        if (std::string(argv[i]) == "--timestep") {
+            try {
+                double dt = std::stod(argv[i + 1]);
+                if (dt > 0) {
+                    return dt;
+                }
+            } catch (...) {
+                std::cerr << "Warning: Invalid timestep value, using config default\n";
+            }
+        }
+    }
+    return -1.0;  // Sentinel: use config default
+}
+
 
 // ===========================================================================
 // MISSION RUNNER (Single Mission)
 // ===========================================================================
 
-void runSingleMissionMode(const std::string& config_path) {
+
+void runSingleMissionMode(const std::string& config_path, double timestep_override = -1.0) {
     std::cout << "\n";
     std::cout << "=====================================================\n";
     std::cout << "ORBITAL TRANSFER PROPAGATOR - SINGLE MISSION MODE\n";
@@ -31,6 +55,11 @@ void runSingleMissionMode(const std::string& config_path) {
     
     // Load configuration
     MissionConfig config = loadConfigFromYAML(config_path);
+    
+    // Apply timestep override if provided
+    if (timestep_override > 0) {
+        config.timestep_s = timestep_override;
+    }
     
     std::cout << "Configuration loaded from: " << config_path << "\n";
     std::cout << "  Spacecraft: " << config.spacecraft.name << "\n";
@@ -40,7 +69,11 @@ void runSingleMissionMode(const std::string& config_path) {
     std::cout << "  From: " << getBodyName(config.departure_body) << "\n";
     std::cout << "  To: " << getBodyName(config.arrival_body) << "\n";
     std::cout << "  Integrator: " << config.integrator << "\n";
-    std::cout << "  Timestep: " << config.timestep_s << " s\n\n";
+    std::cout << "  Timestep: " << config.timestep_s << " s";
+    if (timestep_override > 0) {
+        std::cout << " (overridden)";
+    }
+    std::cout << "\n\n";
     
     // Get orbital radii
     double r_dep = getOrbitalRadius(config.departure_body);
@@ -102,11 +135,13 @@ void runSingleMissionMode(const std::string& config_path) {
 }
 
 
+
 // ===========================================================================
 // BATCH MISSION RUNNER
 // ===========================================================================
 
-void runBatchMissionMode(const std::string& batch_config_file) {
+
+void runBatchMissionMode(const std::string& batch_config_file, double timestep_override = -1.0) {
     std::cout << "\n";
     std::cout << "=====================================================\n";
     std::cout << "ORBITAL TRANSFER PROPAGATOR - BATCH MODE\n";
@@ -136,9 +171,14 @@ void runBatchMissionMode(const std::string& batch_config_file) {
     batch_file.close();
     
     std::cout << "Batch configuration loaded: " << batch_config_file << "\n";
-    std::cout << "Missions to run: " << config_files.size() << "\n\n";
+    std::cout << "Missions to run: " << config_files.size() << "\n";
+    if (timestep_override > 0) {
+        std::cout << "Timestep override: " << timestep_override << " s\n";
+    }
+    std::cout << "\n";
     
     // Create batch runner and execute missions
+    // NOTE: If your MissionBatchRunner needs timestep override, add support there
     MissionBatchRunner batch_runner;
     MissionComparison comparison = batch_runner.runBatchMissions(config_files);
     
@@ -151,14 +191,14 @@ void runBatchMissionMode(const std::string& batch_config_file) {
     createDirectory(results_dir);
     comparison.writeComparisonCSV(results_dir + "/mission_comparison.csv");
 
-
-    
     std::cout << "=====================================================\n\n";
 }
+
 
 // ===========================================================================
 // MAIN ENTRY POINT
 // ===========================================================================
+
 
 int main(int argc, char* argv[]) {
     std::cout << "\n";
@@ -167,35 +207,39 @@ int main(int argc, char* argv[]) {
     std::cout << "║                    Version 1.0                      ║\n";
     std::cout << "╚═════════════════════════════════════════════════════╝\n";
     
+    // Parse timestep override
+    double timestep_override = parseTimestepOverride(argc, argv);
+    
     // Check command line arguments
     if (argc == 1) {
         // Default: run single mission
         std::cout << "\nUsage:\n";
-        std::cout << "  Single mission:  ./propagator <config.yaml>\n";
-        std::cout << "  Batch missions:  ./propagator --batch <batch_config.txt>\n\n";
+        std::cout << "  Single mission:  ./propagator <config.yaml> [--timestep <seconds>]\n";
+        std::cout << "  Batch missions:  ./propagator --batch <batch_config.txt> [--timestep <seconds>]\n\n";
         
         std::cout << "No arguments provided. Running default single mission mode...\n";
-        runSingleMissionMode("../config/earth_mars_baseline.yaml");
+        runSingleMissionMode("../config/earth_mars_baseline.yaml", timestep_override);
         
     } else if (argc == 2 && std::string(argv[1]) == "--batch") {
         std::cerr << "Error: --batch flag requires a config file argument\n";
-        std::cerr << "Usage: ./propagator --batch <batch_config.txt>\n";
+        std::cerr << "Usage: ./propagator --batch <batch_config.txt> [--timestep <seconds>]\n";
         return 1;
         
     } else if (argc >= 2 && std::string(argv[1]) == "--batch") {
         // Batch mode
         std::string batch_config = argv[2];
-        runBatchMissionMode(batch_config);
+        runBatchMissionMode(batch_config, timestep_override);
         
-    } else if (argc == 2) {
+    } else if (argc >= 2) {
         // Single mission mode with specified config
-        runSingleMissionMode(argv[1]);
+        // (argv[1] is config file; --timestep handled by parseTimestepOverride)
+        runSingleMissionMode(argv[1], timestep_override);
         
     } else {
         std::cerr << "Error: Invalid arguments\n";
         std::cerr << "Usage:\n";
-        std::cerr << "  Single mission:  ./propagator <config.yaml>\n";
-        std::cerr << "  Batch missions:  ./propagator --batch <batch_config.txt>\n";
+        std::cerr << "  Single mission:  ./propagator <config.yaml> [--timestep <seconds>]\n";
+        std::cerr << "  Batch missions:  ./propagator --batch <batch_config.txt> [--timestep <seconds>]\n";
         return 1;
     }
     
