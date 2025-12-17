@@ -30,7 +30,7 @@ PLANET_RADII_KM = {
 }
 
 class MissionAnalyzer:
-    def __init__(self, results_dir='./results'):
+    def __init__(self, results_dir='../results'):
         """Initialize the analyzer with results directory"""
         self.results_dir = Path(results_dir)
         self.results_dir.mkdir(exist_ok=True)
