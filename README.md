@@ -32,8 +32,9 @@ Executables are located in `build/bin/`:
 
 ### Single Trajectory Propagation
 
+While in root directory:
 ```bash
-./build/bin/propagate_trajectory config/earth_mars_low_hall.yaml
+./build/bin/propagate_trajectory ../config/earth_mars_low_hall.yaml
 ```
 
 Configuration files in `config/` define:
@@ -50,9 +51,9 @@ Results are written to `results/` as CSV files containing time-series of:
 ### Batch Mission Propagation
 
 Run multiple mission configurations sequentially and generate comparative analysis:
-
+While in root directory:
 ```bash
-./build/bin/propagate_trajectory --batch config/mission_batch.txt
+./build/bin/propagate_trajectory --batch ../config/mission_batch.txt
 ```
 
 The batch configuration file lists one mission config per line:
@@ -76,6 +77,97 @@ Output file contains columns:
 - Flight time (days), Total delta-V (km/s), Fuel consumed (kg), Final mass (kg)
 - Apoapis, Periapsis, Eccentricity, Semi-major axis
 - Payload fraction, Effective Isp, Fuel efficiency, Transfer efficiency
+
+# Post-Processing and Visualization
+
+After running the trajectory simulations, you can generate comparison plots and analysis visualizations using the Python analysis script.
+
+## Quick Start
+
+```bash
+# Run post-processing analysis
+cd scripts
+python3 analyze_missions.py
+```
+
+All visualization plots will be saved to `results/` directory.
+
+## Prerequisites
+
+Install required Python packages (or set up a virtual environment):
+
+```bash
+pip install -r scripts/requirements.txt
+```
+
+Or install individually:
+
+```bash
+pip install matplotlib numpy pandas
+```
+
+## What It Generates
+
+The script produces 8 visualization plots and an HTML summary:
+
+| Plot | Description |
+|---|---|
+| `flight_time_comparison.png` | Bar chart: mission duration (days) for each thruster type |
+| `delta_v_comparison.png` | Bar chart: total Δv (km/s) required for each mission |
+| `fuel_efficiency_tradeoff.png` | Scatter plot: fuel consumed vs. flight time trade-off analysis |
+| `payload_fraction.png` | Bar chart: final payload as % of initial mass |
+| `trajectory_xy_earth_mars_*.png` (4 files) | XY position plots showing spiral trajectory for each thruster configuration |
+| `orbital_elements_earth_mars_*.png` (4 files) | Orbital element evolution: apoapsis, periapsis, eccentricity over time |
+
+## Input Data
+
+The script reads from:
+- `results/mission_comparison.csv` - Summary metrics for each mission
+- `results/*_trajectory.csv` - Full trajectory data for each thruster type
+
+## Interpreting Results
+
+**HTML Report**
+An mission_report.html is automatically generated to summarize the key findings and visualizations. You can open it in your browser or desired HTML viewer. Individual CSVs for each trajectory, as well as mission_copmarison.csv, can also be accessed from /results.
+
+**Use the report to:**
+1. Compare thruster performance across multiple metrics
+2. Identify mission trade-offs (speed vs. efficiency)
+3. Validate that all missions reach desired orbit successfully
+4. Analyze orbital element evolution during spiral transfer
+
+## Troubleshooting
+
+**"No such file or directory" or missing CSV files:**
+- Run the C++ simulations first (from root): `./build/bin/propagate_trajectory --batch ../config/mission_batch.txt`
+- Ensure you're running the script from the `scripts/` directory
+
+**"ModuleNotFoundError":**
+- Install dependencies: `pip install -r requirements.txt`
+
+**Plots not opening:**
+- Plots are automatically saved to files, not displayed to screen
+- Check `results/` directory for PNG files if there are HTML display errors
+
+## Example Workflow
+
+```bash
+# Full workflow from build to visualization
+cd build
+cmake ..
+make clean
+make
+
+# Run all 4 missions (from root)
+./bin/propagate_trajectory --batch ../config/mission_batch.txt
+
+# Generate analysis plots
+cd ../scripts
+python3 analyze_missions.py
+
+# View results
+# Open mission_report.html in browser
+```
 
 ### Convergence Study
 
