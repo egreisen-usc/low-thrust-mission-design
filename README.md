@@ -10,6 +10,7 @@ The application propagates spacecraft trajectories from Earth to Mars under vari
 
 - C++17 compiler (g++ or clang)
 - CMake 3.10+
+- yaml-cpp >= 0.6.0 (development version, YAML config parsing)
 - Python 3.7+ (for analysis scripts)
 - Python packages: pandas, numpy, matplotlib, pyyaml
 
