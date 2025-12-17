@@ -309,11 +309,14 @@ class MissionAnalyzer:
         print(f"✓ Saved: orbital_elements_{base_name}.png")
         plt.close()
     
-    def generate_summary_report(self):
-        """Generate HTML summary report with embedded plots"""
+    def generate_html_report(self):
+        """Generate comprehensive HTML report with all plots"""
         if self.comparison_df is None:
-            print("No comparison data loaded")
+            print("No comparison data to generate report")
             return
+
+        # Get mission names for organized sections
+        missions = self.comparison_df['Mission'].unique()
         
         html_content = """
 <!DOCTYPE html>
@@ -321,227 +324,329 @@ class MissionAnalyzer:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission Analysis Report</title>
+    <title>Low-Thrust Orbital Transfer Analysis Report</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
+            background-color: #f5f5f5;
             color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
         }
-        .header {
-            background: linear-gradient(135deg, #2E86AB 0%, #A23B72 100%);
+        
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
-            padding: 30px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 40px;
             border-radius: 8px;
-            margin-bottom: 30px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        h1 {
-            margin: 0;
+        
+        header h1 {
             font-size: 2.5em;
+            margin-bottom: 10px;
         }
-        h2 {
-            color: #2E86AB;
-            border-bottom: 3px solid #2E86AB;
-            padding-bottom: 10px;
-            margin-top: 30px;
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
         }
-        .summary-box {
+        
+        section {
             background: white;
-            padding: 20px;
+            margin-bottom: 30px;
+            padding: 30px;
             border-radius: 8px;
-            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .metric {
-            display: inline-block;
-            width: 23%;
-            margin: 1%;
-            padding: 15px;
-            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
-            border-radius: 6px;
-            text-align: center;
-            border-left: 4px solid #2E86AB;
-        }
-        .metric-value {
+        
+        section h2 {
+            color: #1e3c72;
+            border-bottom: 3px solid #2a5298;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
             font-size: 1.8em;
-            font-weight: bold;
-            color: #2E86AB;
         }
-        .metric-label {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: 5px;
+        
+        section h3 {
+            color: #2a5298;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
         }
-        .plot-container {
-            background: white;
+        
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .image-grid-full {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .image-container {
+            background: #f9f9f9;
             padding: 15px;
-            margin: 20px 0;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        img {
-            max-width: 100%;
-            height: auto;
             border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
         }
+        
+        .image-container:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            display: block;
+        }
+        
+        .image-title {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #1e3c72;
+            font-size: 0.95em;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            font-size: 0.95em;
         }
-        th {
-            background-color: #2E86AB;
+        
+        table thead {
+            background-color: #2a5298;
             color: white;
+        }
+        
+        table th {
             padding: 12px;
             text-align: left;
-            font-weight: bold;
+            font-weight: 600;
         }
-        td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
+        
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
         }
-        tr:hover {
-            background-color: #f9f9f9;
+        
+        table tbody tr:nth-child(even) {
+            background-color: #f5f5f5;
         }
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #ddd;
+        
+        table tbody tr:hover {
+            background-color: #efefef;
+        }
+        
+        .toc {
+            background: #f0f4f8;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .toc li {
+            margin-bottom: 8px;
+        }
+        
+        .toc a {
+            color: #2a5298;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .toc a:hover {
+            color: #1e3c72;
+            text-decoration: underline;
+        }
+        
+        footer {
             text-align: center;
-            color: #666;
+            padding: 20px;
+            color: #999;
             font-size: 0.9em;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 40px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Orbital Transfer Mission Analysis Report</h1>
-        <p>Low-Thrust Electric Propulsion Mission Design Study</p>
-    </div>
-
-    <div class="summary-box">
-        <h2>Executive Summary</h2>
-"""
+    <div class="container">
+        <header>
+            <h1>Low-Thrust Orbital Transfer</h1>
+            <p>Mission Analysis and Comparative Study Report</p>
+            <p>Trajectory Optimization and Performance Analysis</p>
+        </header>
         
-        if len(self.comparison_df) > 0:
-            best_time = self.comparison_df.loc[self.comparison_df['FlightTime(days)'].idxmin()]
-            best_dv = self.comparison_df.loc[self.comparison_df['DeltaV(km/s)'].idxmin()]
-            best_efficient = self.comparison_df.loc[self.comparison_df['PayloadFraction'].idxmax()]
+        <!-- Table of Contents -->
+        <section>
+            <div class="toc">
+                <h3>Contents</h3>
+                <ul>
+                    <li><a href="#overview">Executive Summary</a></li>
+                    <li><a href="#comparison">Mission Comparison</a></li>
+                    <li><a href="#trajectories">Trajectory Analysis</a></li>
+                    <li><a href="#orbital-elements">Orbital Element Analysis</a></li>
+                </ul>
+            </div>
+        </section>
+        
+        <!-- Executive Summary -->
+        <section id="overview">
+            <h2>Executive Summary</h2>
+            <p>This report presents a comprehensive analysis of low-thrust orbital transfer missions using multiple thruster configurations.</p>
             
-            html_content += f"""
-        <p>This analysis covers <strong>{len(self.comparison_df)}</strong> mission scenarios with various electric propulsion systems.</p>
-        
-        <div>
-            <div class="metric">
-                <div class="metric-value">{best_time['FlightTime(days)']:.1f}</div>
-                <div class="metric-label">Fastest Transfer (days)</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value">{best_dv['DeltaV(km/s)']:.2f}</div>
-                <div class="metric-label">Minimum Delta-V (km/s)</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value">{best_efficient['PayloadFraction']*100:.2f}%</div>
-                <div class="metric-label">Best Payload Fraction</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value">{self.comparison_df['FuelEfficiency(km/s/kg)'].max():.3f}</div>
-                <div class="metric-label">Max Fuel Efficiency</div>
-            </div>
-        </div>
-    </div>
-
-    <h2>Performance Comparison Charts</h2>
-    
-    <div class="plot-container">
-        <h3>Flight Time by Thruster Type</h3>
-        <img src="flight_time_comparison.png" alt="Flight Time Comparison">
-    </div>
-    
-    <div class="plot-container">
-        <h3>Delta-V Requirements</h3>
-        <img src="delta_v_comparison.png" alt="Delta-V Comparison">
-    </div>
-    
-    <div class="plot-container">
-        <h3>Fuel Efficiency Trade-off Analysis</h3>
-        <img src="fuel_efficiency_tradeoff.png" alt="Fuel Efficiency">
-    </div>
-    
-    <div class="plot-container">
-        <h3>Payload Fraction by Thruster</h3>
-        <img src="payload_fraction.png" alt="Payload Fraction">
-    </div>
-
-    <h2>Detailed Mission Comparison</h2>
-    <div class="summary-box">
+            <h3>Mission Data</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mission</th>
+                        <th>Thruster Type</th>
+                        <th>Flight Time (days)</th>
+                        <th>Delta-V (km/s)</th>
+                        <th>Fuel Consumed (kg)</th>
+                        <th>Payload Fraction</th>
+                    </tr>
+                </thead>
+                <tbody>
 """
         
-        # Add detailed table
-        html_content += """
-        <table>
-            <thead>
-                <tr>
-                    <th>Mission</th>
-                    <th>Thruster</th>
-                    <th>Flight Time (days)</th>
-                    <th>Delta-V (km/s)</th>
-                    <th>Fuel (kg)</th>
-                    <th>Payload (%)</th>
-                </tr>
-            </thead>
-            <tbody>
-"""
-        
+        # Add mission data rows
         for idx, row in self.comparison_df.iterrows():
             html_content += f"""
-                <tr>
-                    <td>{row['Mission']}</td>
-                    <td>{row['Thruster']}</td>
-                    <td>{row['FlightTime(days)']:.1f}</td>
-                    <td>{row['DeltaV(km/s)']:.2f}</td>
-                    <td>{row['FuelConsumed(kg)']:.0f}</td>
-                    <td>{row['PayloadFraction']*100:.2f}%</td>
-                </tr>
+                    <tr>
+                        <td>{row['Mission']}</td>
+                        <td>{row['Thruster']}</td>
+                        <td>{row['FlightTime(days)']:.1f}</td>
+                        <td>{row['DeltaV(km/s)']:.2f}</td>
+                        <td>{row['FuelConsumed(kg)']:.2f}</td>
+                        <td>{row['PayloadFraction']*100:.2f}%</td>
+                    </tr>
 """
         
         html_content += """
-            </tbody>
-        </table>
-    </div>
-
-    <h2>Key Findings</h2>
-    <div class="summary-box">
-        <ul>
-            <li>High-power thrusters achieve faster transfers but consume more fuel</li>
-            <li>Low-power thrusters have better payload fractions due to lower fuel consumption</li>
-            <li>Transfer efficiency approaches 100% at coast activation</li>
-            <li>Fuel efficiency varies significantly with thruster type and mission profile</li>
-        </ul>
-    </div>
-
-    <div class="footer">
-        <p>Generated by Mission Analysis Tool | Low-Thrust Orbital Transfer Propagator v1.0</p>
+                </tbody>
+            </table>
+        </section>
+        
+        <!-- Comparison Plots Section -->
+        <section id="comparison">
+            <h2>Mission Comparison</h2>
+            <p>The following plots compare performance metrics across all analyzed missions:</p>
+            
+            <div class="image-grid">
+                <div class="image-container">
+                    <img src="flight_time_comparison.png" alt="Flight Time Comparison">
+                    <div class="image-title">Mission Duration by Configuration</div>
+                </div>
+                <div class="image-container">
+                    <img src="delta_v_comparison.png" alt="Delta-V Comparison">
+                    <div class="image-title">Velocity Change Required</div>
+                </div>
+                <div class="image-container">
+                    <img src="fuel_efficiency_tradeoff.png" alt="Fuel Efficiency Trade-off">
+                    <div class="image-title">Efficiency vs Duration</div>
+                </div>
+                <div class="image-container">
+                    <img src="payload_fraction.png" alt="Payload Fraction">
+                    <div class="image-title">Payload Mass Fraction</div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Individual Mission Trajectories -->
+        <section id="trajectories">
+            <h2>Trajectory Analysis</h2>
+            <p>The following plots show the computed transfer trajectories for each mission configuration:</p>
+"""
+        
+        # Add trajectory plots
+        for mission in missions:
+            base_name = mission.replace('.yaml', '')
+            html_content += f"""
+            <h3>{mission}</h3>
+            <div class="image-grid-full">
+                <div class="image-container">
+                    <img src="trajectory_xy_{base_name}.png" alt="Trajectory: {mission}">
+                    <div class="image-title">Spiral Transfer Trajectory: {mission}</div>
+                </div>
+            </div>
+"""
+        
+        html_content += """
+        </section>
+        
+        <!-- Orbital Elements Evolution -->
+        <section id="orbital-elements">
+            <h2>Orbital Element Analysis</h2>
+            <p>The following plots show the evolution of orbital elements during each transfer:</p>
+"""
+        
+        # Add orbital elements plots
+        for mission in missions:
+            base_name = mission.replace('.yaml', '')
+            html_content += f"""
+            <h3>{mission}</h3>
+            <div class="image-grid-full">
+                <div class="image-container">
+                    <img src="orbital_elements_{base_name}.png" alt="Orbital Elements: {mission}">
+                    <div class="image-title">Orbital Element Evolution: {mission}</div>
+                </div>
+            </div>
+"""
+        
+        html_content += """
+        </section>
+        
+        <!-- Footer -->
+        <footer>
+            <p>Low-Thrust Orbital Transfer Analysis Report</p>
+            <p>Generated by Mission Analysis Script</p>
+        </footer>
     </div>
 </body>
 </html>
 """
         
+        # Write HTML file
         filepath = self.results_dir / 'mission_report.html'
         with open(filepath, 'w') as f:
             f.write(html_content)
         
-        print(f"✓ Saved: mission_report.html")
-
+        print(f"✓ Generated HTML report: {filepath}")
+        return str(filepath)
 
 def main():
     """Main analysis script"""
@@ -578,7 +683,7 @@ def main():
     
     # Generate summary report
     print("\nGenerating HTML report...")
-    analyzer.generate_summary_report()
+    analyzer.generate_html_report()
     
     print("\n" + "="*60)
     print("Analysis Complete!")
