@@ -10,6 +10,7 @@ The application propagates spacecraft trajectories from Earth to Mars under vari
 
 - C++17 compiler (g++ or clang)
 - CMake 3.10+
+- yaml-cpp >= 0.6.0 (development version, YAML config parsing)
 - Python 3.7+ (for analysis scripts)
 - Python packages: pandas, numpy, matplotlib, pyyaml
 
@@ -34,7 +35,8 @@ Executables are located in `build/bin/`:
 
 While in root directory:
 ```bash
-./build/bin/propagate_trajectory ../config/earth_mars_low_hall.yaml
+cd build
+./bin/propagate_trajectory ../config/earth_mars_low_hall.yaml
 ```
 
 Configuration files in `config/` define:
@@ -53,7 +55,8 @@ Results are written to `results/` as CSV files containing time-series of:
 Run multiple mission configurations sequentially and generate comparative analysis:
 While in root directory:
 ```bash
-./build/bin/propagate_trajectory --batch ../config/mission_batch.txt
+cd build
+./bin/propagate_trajectory --batch ../config/mission_batch.txt
 ```
 
 The batch configuration file lists one mission config per line:
@@ -153,12 +156,14 @@ An mission_report.html is automatically generated to summarize the key findings 
 
 ```bash
 # Full workflow from build to visualization
+mkdir build
 cd build
-cmake ..
-make clean
-make
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j4
+cd ..
 
-# Run all 4 missions (from root)
+# Run all missions:
+cd build
 ./bin/propagate_trajectory --batch ../config/mission_batch.txt
 
 # Generate analysis plots
