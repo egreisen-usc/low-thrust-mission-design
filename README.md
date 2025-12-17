@@ -103,7 +103,7 @@ pip install -r scripts/requirements.txt
 Or install individually:
 
 ```bash
-pip install matplotlib numpy pandas
+pip install matplotlib numpy pandas pyyaml
 ```
 
 ## What It Generates
